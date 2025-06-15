@@ -1,12 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// 秘密の金庫から、合言葉を読み込む準備
 const API_KEY = process.env.GEMINI_API_KEY || "";
 
-// これが魔法使いの本体
 export async function POST(request: Request) {
   
-  // ウェイターから、お客さんの注文を受け取る
   const { inputText } = await request.json();
 
   if (!inputText) {
@@ -14,37 +11,36 @@ export async function POST(request: Request) {
   }
 
   try {
-    // 毎回のリクエストをユニークにするための「隠し味」
-    const randomSalt = Date.now(); 
-
     const genAI = new GoogleGenerativeAI(API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const generationConfig = {
+      temperature: 0.9,
+      topK: 1,
+      topP: 1,
+      maxOutputTokens: 8192,
+    };
     
-    // ★★★ ここが、最終進化した「秘伝のレシピ（プロンプト）」だ！ ★★★
+    // ★★★ ここが、11人全員のコメントを要求する、最終版のプロンプトだ！ ★★★
     const prompt = `
       # MPA評価システムによる評価リクエスト
 
       あなたは、高度な文章評価システム「MPA評価システム」です。
       提供された文章を、11人のビジネス評議会メンバーと4つの評価軸に基づいて多角的に分析し、評価結果をJSON形式で返してください。
 
-      ## ビジネス評議会11名
-      (オリジン君、インサイト君、ストラテジスト君、サポーター君、リスクチェッカー君、バランサー君、パフォーマー君、アナリスト君、インタープリター君、リアリスト君、クエスチョナー君)
-
-      ## 四大評価軸
-      (MVI、CSI、RES、ARC)
+      ## 出力形式（JSON）
+      以下のJSON形式に厳密に従って、評価結果を生成してください。
+      - 各スコアは10点満点の数値（小数点第一位まで）で評価してください。
+      - 各人格のコメントは、そのキャラクターの役割と性格を反映した、具体的で示唆に富む内容にしてください。
+      - 【最重要指示】councilCommentsには、11人の評議会メンバー全員分のコメントを、必ず配列内に含めてください。
+      - ホメ仙人のコメントは、評価対象の文章全体を優しく肯定する、唯一無二のユニークな言葉を生成してください。
 
       ## 評価対象の文章
       ---
       ${inputText}
       ---
 
-      ## 出力形式（JSON）
-      以下のJSON形式に従って、評価結果を生成してください。
-      - 各スコアは10点満点の数値（小数点第一位まで）で評価してください。
-      - 各人格のコメントは、そのキャラクターの役割と性格を反映した、具体的で示唆に富む内容にしてください。
-      - **【最重要指示】ホメ仙人のコメントは、評価対象の文章全体を優しく肯定する、唯一無二のユニークな言葉を生成してください。静寂型、質問型、詩型などの変奏スタイルを意識し、決して以前の回答と同じ言葉や、ありきたりな表現を使わないでください。**
-      - 内部的なユニークID: ${randomSalt} // このIDは出力に含めないでください
-
+      ## JSON出力例
       \`\`\`json
       {
         "overallScore": 9.2,
@@ -56,18 +52,31 @@ export async function POST(request: Request) {
           "arc": 9.8
         },
         "councilComments": [
-          { "name": "オリジン君", "comment": "この文章の根源的な目的は何か、その一点が明確に伝わってきます。" }
+          { "name": "オリジン君", "comment": "..." },
+          { "name": "インサイト君", "comment": "..." },
+          { "name": "ストラテジスト君", "comment": "..." },
+          { "name": "サポーター君", "comment": "..." },
+          { "name": "リスクチェッカー君", "comment": "..." },
+          { "name": "バランサー君", "comment": "..." },
+          { "name": "パフォーマー君", "comment": "..." },
+          { "name": "アナリスト君", "comment": "..." },
+          { "name": "インタープリター君", "comment": "..." },
+          { "name": "リアリスト君", "comment": "..." },
+          { "name": "クエスチョナー君", "comment": "..." }
         ],
         "homeSenninComment": "おぬしの言葉、静かな池に落ちた一滴の雫のようじゃった。波紋は、これからゆっくりと広がっていくのじゃろう…。"
       }
       \`\`\`
     `;
 
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig,
+    });
+
     const response = await result.response;
     const responseText = await response.text();
     
-    // AIの返事からJSON部分だけを賢く抽出する
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
 
     if (!jsonMatch) {
