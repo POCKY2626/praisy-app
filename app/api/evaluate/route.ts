@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // これは、僕らの作った秘密の金庫（.env.local）から、合言葉（APIキー）を読み込むための準備だよ
 const API_KEY = process.env.GEMINI_API_KEY || "";
