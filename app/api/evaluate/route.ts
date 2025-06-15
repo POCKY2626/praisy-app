@@ -21,7 +21,6 @@ export async function POST(request: Request) {
       maxOutputTokens: 8192,
     };
     
-    // ★★★ ここが、11人全員のコメントを要求する、最終版のプロンプトだ！ ★★★
     const prompt = `
       # MPA評価システムによる評価リクエスト
 
@@ -30,9 +29,9 @@ export async function POST(request: Request) {
 
       ## 出力形式（JSON）
       以下のJSON形式に厳密に従って、評価結果を生成してください。
+      - 【最重要規則】JSONのすべてのキー（プロパティ名）は、必ずダブルクォーテーション（"）で囲んでください。例: "overallScore", "summary" など。シングルクォーテーションや引用符なしは許容されません。
       - 各スコアは10点満点の数値（小数点第一位まで）で評価してください。
-      - 各人格のコメントは、そのキャラクターの役割と性格を反映した、具体的で示唆に富む内容にしてください。
-      - 【最重要指示】councilCommentsには、11人の評議会メンバー全員分のコメントを、必ず配列内に含めてください。
+      - councilCommentsには、11人の評議会メンバー全員分のコメントを、必ず配列内に含めてください。
       - ホメ仙人のコメントは、評価対象の文章全体を優しく肯定する、唯一無二のユニークな言葉を生成してください。
 
       ## 評価対象の文章
@@ -53,16 +52,7 @@ export async function POST(request: Request) {
         },
         "councilComments": [
           { "name": "オリジン君", "comment": "..." },
-          { "name": "インサイト君", "comment": "..." },
-          { "name": "ストラテジスト君", "comment": "..." },
-          { "name": "サポーター君", "comment": "..." },
-          { "name": "リスクチェッカー君", "comment": "..." },
-          { "name": "バランサー君", "comment": "..." },
-          { "name": "パフォーマー君", "comment": "..." },
-          { "name": "アナリスト君", "comment": "..." },
-          { "name": "インタープリター君", "comment": "..." },
-          { "name": "リアリスト君", "comment": "..." },
-          { "name": "クエスチョナー君", "comment": "..." }
+          { "name": "インサイト君", "comment": "..." }
         ],
         "homeSenninComment": "おぬしの言葉、静かな池に落ちた一滴の雫のようじゃった。波紋は、これからゆっくりと広がっていくのじゃろう…。"
       }
