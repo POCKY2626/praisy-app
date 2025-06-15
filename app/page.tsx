@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from 'react';
+import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend } from 'chart.js';
+import { Radar } from 'react-chartjs-2';
+
+ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
 // 型定義
 type AxisComment = {
@@ -32,7 +36,7 @@ type AnalysisResult = {
 // 11人格のデータ
 const councilMembers = [
     { icon: "👑", name: "オリジン君", title: "本質の探求者" },
-    { icon: "💡", name: "インサイト君", title: "直感の先駆者" },
+    { icon: "�", name: "インサイト君", title: "直感の先駆者" },
     { icon: "⚪️", name: "ストラテジスト君", title: "論理の設計者" },
     { icon: "💎", name: "サポーター君", title: "チームの支援者" },
     { icon: "⚫️", name: "リスクチェッカー君", title: "厳格な監査役" },
@@ -52,7 +56,7 @@ const axesData = [
     { key: 'arc', name: 'ARC (論理構成度)', icon: '❄️', description: '表現の明快さ、論理的一貫性、構造の完成度' }
 ];
 
-// ★★★ スコアから星評価を生成するヘルパーコンポーネント ★★★
+// スコアから星評価を生成するヘルパーコンポーネント
 const StarRating = ({ score }: { score: number }) => {
   const fullStars = Math.floor(score / 20);
   const halfStar = (score % 20) >= 10 ? 1 : 0;
@@ -61,12 +65,11 @@ const StarRating = ({ score }: { score: number }) => {
   return (
     <div className="flex items-center text-yellow-400">
       {[...Array(fullStars)].map((_, i) => <span key={`full-${i}`}>★</span>)}
-      {halfStar === 1 && <span>☆</span>} {/* ここでは半分の星を空星で代用、よりリッチにするならSVGアイコンなど */}
+      {halfStar === 1 && <span>☆</span>}
       {[...Array(emptyStars)].map((_, i) => <span key={`empty-${i}`} className="text-gray-600">★</span>)}
     </div>
   );
 };
-
 
 export default function Home() {
   const [inputText, setInputText] = useState('');
@@ -95,6 +98,35 @@ export default function Home() {
     setInputText('');
     setError('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const radarData = {
+    labels: axesData.map(axis => axis.name),
+    datasets: [{
+        label: '評価スコア',
+        data: result ? axesData.map(axis => result.axes[axis.key as keyof typeof result.axes]) : [0, 0, 0, 0],
+        backgroundColor: 'rgba(45, 212, 191, 0.2)',
+        borderColor: 'rgba(45, 212, 191, 1)',
+        borderWidth: 2,
+    }],
+  };
+  const radarOptions = {
+    scales: { 
+      r: { 
+        angleLines: { color: 'rgba(255, 255, 255, 0.2)' }, 
+        grid: { color: 'rgba(255, 255, 255, 0.2)' }, 
+        pointLabels: { color: '#fff', font: { size: 12 } }, 
+        ticks: { 
+          color: 'rgba(255, 255, 255, 0.7)', 
+          backdropColor: 'rgba(0,0,0,0)',
+          min: 0,
+          max: 100,
+          stepSize: 20
+        }
+      }
+    },
+    plugins: { legend: { display: false }},
+    maintainAspectRatio: false
   };
 
   return (
@@ -158,12 +190,12 @@ export default function Home() {
                 <p className="text-gray-300 mt-4 max-w-3xl mx-auto">{result.summary}</p>
             </div>
 
-            {/* ★★★ ここが新しい「四大評価軸の分析」セクションです ★★★ */}
             <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 p-8 rounded-2xl shadow-lg mb-8">
                 <h3 className="text-2xl font-bold text-white mb-6 text-center">四大評価軸の分析</h3>
-                <div className="grid md:grid-cols-2 gap-8">
-                    {result.axesComments ? (
-                        axesData.map(axis => (
+                {/* ★★★ ここが修正点！ result.axesCommentsが存在するかどうかを確認してから表示する ★★★ */}
+                {result.axesComments ? (
+                    <div className="grid md:grid-cols-2 gap-8">
+                        {axesData.map(axis => (
                             <div key={axis.key} className="bg-gray-900/50 p-6 rounded-lg">
                                 <div className="flex justify-between items-center mb-3">
                                     <h4 className="font-bold text-lg flex items-center text-white">
@@ -180,11 +212,11 @@ export default function Home() {
                                   <p className="text-sm text-gray-300 mt-2"><strong className="text-yellow-400">向上案:</strong> {result.axesComments[axis.key as keyof typeof result.axesComments].improvementComment}</p>
                                 </div>
                             </div>
-                        ))
-                    ) : (
-                      <p className="text-gray-400 text-center col-span-2 mt-8">詳細な評価軸コメントは生成されませんでした。</p>
-                    )}
-                </div>
+                        ))}
+                    </div>
+                ) : (
+                  <p className="text-gray-400 text-center col-span-2 mt-8">詳細な評価軸コメントは生成されませんでした。</p>
+                )}
             </div>
             
             <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 p-8 rounded-2xl shadow-lg mb-8"><h3 className="text-lg font-semibold text-teal-300 mb-6">11人格からの詳細コメント</h3><div className="grid md:grid-cols-2 gap-x-8 gap-y-6">{result.councilComments.map((comment) => (<div key={comment.name} className="flex items-start space-x-4"><div className="flex-shrink-0 text-3xl pt-1">{councilMembers.find(m => m.name === comment.name)?.icon}</div><div><p className="font-bold text-white">{comment.name}</p><p className="text-gray-300 text-sm">{comment.comment}</p></div></div>))}</div></div>
