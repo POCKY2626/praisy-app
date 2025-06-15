@@ -20,7 +20,7 @@ type AnalysisResult = {
     res: number;
     arc: number;
   };
-  axesComments: { // ★★★ 新しい型を追加
+  axesComments?: { // AIが返さない可能性も考慮して任意項目に
     mvi: AxisComment;
     csi: AxisComment;
     res: AxisComment;
@@ -63,7 +63,6 @@ export default function Home() {
   const [error, setError] = useState('');
 
   const handleAnalysis = async () => {
-    // ... (分析処理のロジックは変更なし)
     if (!inputText.trim()) { setError('テキストを入力してください。'); return; }
     setIsLoading(true); setError(''); setResult(null);
     try {
@@ -134,17 +133,21 @@ export default function Home() {
                 {/* ★★★ 四大評価軸の詳細コメント ★★★ */}
                 <div className="lg:col-span-3 bg-[#2D3748] p-6 rounded-xl shadow-lg">
                     <h3 className="text-lg font-semibold text-[#00A7C4] mb-4">四大評価軸の分析</h3>
-                    <div className="space-y-4">
-                        {axesData.map(axis => (
-                            <div key={axis.key}>
-                                <h4 className="font-bold text-md flex items-center"><span className="text-2xl mr-2">{axis.icon}</span>{axis.name}</h4>
-                                <div className="border-l-2 border-gray-600 pl-4 ml-3 mt-2">
-                                  <p className="text-sm text-gray-300"><strong className="text-green-400">評価:</strong> {result.axesComments[axis.key as keyof typeof result.axesComments].evaluationComment}</p>
-                                  <p className="text-sm text-gray-300 mt-1"><strong className="text-yellow-400">向上案:</strong> {result.axesComments[axis.key as keyof typeof result.axesComments].improvementComment}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    {result.axesComments ? (
+                      <div className="space-y-4">
+                          {axesData.map(axis => (
+                              <div key={axis.key}>
+                                  <h4 className="font-bold text-md flex items-center"><span className="text-2xl mr-2">{axis.icon}</span>{axis.name}</h4>
+                                  <div className="border-l-2 border-gray-600 pl-4 ml-3 mt-2">
+                                    <p className="text-sm text-gray-300"><strong className="text-green-400">評価:</strong> {result.axesComments![axis.key as keyof typeof result.axesComments].evaluationComment}</p>
+                                    <p className="text-sm text-gray-300 mt-1"><strong className="text-yellow-400">向上案:</strong> {result.axesComments![axis.key as keyof typeof result.axesComments].improvementComment}</p>
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-400 text-center mt-8">詳細な評価軸コメントは生成されませんでした。</p>
+                    )}
                 </div>
             </div>
             
@@ -161,4 +164,3 @@ export default function Home() {
     </div>
   );
 }
-
