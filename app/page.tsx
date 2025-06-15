@@ -102,7 +102,6 @@ export default function Home() {
 
       <div className="relative container mx-auto px-4 py-10 z-10">
         
-        {/* ★★★ ここが修正点です ★★★ */}
         <header className="w-full text-center mb-16 animate-fade-in">
           <h1 className="text-5xl font-bold text-white tracking-wider">MPA評価システム</h1>
           <p className="text-teal-300 text-xl mt-3 tracking-widest">あなたの内面レベル、四軸評価と11人格で可視化</p>
@@ -158,33 +157,32 @@ export default function Home() {
                 <p className="text-gray-300 mt-4 max-w-3xl mx-auto">{result.summary}</p>
             </div>
 
-            <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 p-8 rounded-2xl shadow-lg mb-8">
-                <h3 className="text-2xl font-bold text-white mb-6 text-center">四大評価軸の分析</h3>
-                {result.axesComments ? (
-                    <div className="grid md:grid-cols-2 gap-8">
-                        {axesData.map(axis => (
-                            <div key={axis.key} className="bg-gray-900/50 p-6 rounded-lg">
-                                <div className="flex justify-between items-center mb-3">
-                                    <h4 className="font-bold text-lg flex items-center text-white">
-                                        <span className="text-3xl mr-3">{axis.icon}</span>
-                                        {axis.name}
-                                    </h4>
-                                    <div className="text-right">
-                                        <StarRating score={result.axes[axis.key as keyof typeof result.axes]} />
-                                        <p className="font-bold text-teal-300 text-lg">{result.axes[axis.key as keyof typeof result.axes]} / 100</p>
-                                    </div>
-                                </div>
-                                <div className="border-t border-gray-700 pt-3">
-                                  <p className="text-sm text-gray-300"><strong className="text-green-400">評価:</strong> {result.axesComments[axis.key as keyof typeof result.axesComments]?.evaluationComment}</p>
-                                  <p className="text-sm text-gray-300 mt-2"><strong className="text-yellow-400">向上案:</strong> {result.axesComments[axis.key as keyof typeof result.axesComments]?.improvementComment}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                  <p className="text-gray-400 text-center col-span-2 mt-8">詳細な評価軸コメントは生成されませんでした。</p>
-                )}
-            </div>
+            {/* ★★★ ここが修正点！ result.axesCommentsが存在するかどうかを確認してから表示する ★★★ */}
+            {result.axesComments && (
+              <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 p-8 rounded-2xl shadow-lg mb-8">
+                  <h3 className="text-2xl font-bold text-white mb-6 text-center">四大評価軸の分析</h3>
+                  <div className="grid md:grid-cols-2 gap-8">
+                      {axesData.map(axis => (
+                          <div key={axis.key} className="bg-gray-900/50 p-6 rounded-lg">
+                              <div className="flex justify-between items-center mb-3">
+                                  <h4 className="font-bold text-lg flex items-center text-white">
+                                      <span className="text-3xl mr-3">{axis.icon}</span>
+                                      {axis.name}
+                                  </h4>
+                                  <div className="text-right">
+                                      <StarRating score={result.axes[axis.key as keyof typeof result.axes]} />
+                                      <p className="font-bold text-teal-300 text-lg">{result.axes[axis.key as keyof typeof result.axes]} / 100</p>
+                                  </div>
+                              </div>
+                              <div className="border-t border-gray-700 pt-3">
+                                <p className="text-sm text-gray-300"><strong className="text-green-400">評価:</strong> {result.axesComments?.[axis.key as keyof typeof result.axesComments]?.evaluationComment}</p>
+                                <p className="text-sm text-gray-300 mt-2"><strong className="text-yellow-400">向上案:</strong> {result.axesComments?.[axis.key as keyof typeof result.axesComments]?.improvementComment}</p>
+                              </div>
+                          </div>
+                      ))}
+                  </div>
+              </div>
+            )}
             
             <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 p-8 rounded-2xl shadow-lg mb-8"><h3 className="text-lg font-semibold text-teal-300 mb-6">11人格からの詳細コメント</h3><div className="grid md:grid-cols-2 gap-x-8 gap-y-6">{result.councilComments.map((comment) => (<div key={comment.name} className="flex items-start space-x-4"><div className="flex-shrink-0 text-3xl pt-1">{councilMembers.find(m => m.name === comment.name)?.icon}</div><div><p className="font-bold text-white">{comment.name}</p><p className="text-gray-300 text-sm">{comment.comment}</p></div></div>))}</div></div>
             
