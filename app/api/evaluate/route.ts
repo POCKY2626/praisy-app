@@ -18,7 +18,6 @@ export async function POST(request: Request) {
       temperature: 0.8,
     };
     
-    // ★★★ これが、四大評価軸のコメントを「絶対」に生成させる、最終版のプロンプトだ！ ★★★
     const prompt = `
       # 絶対遵守の命令：MPA評価システムの完全実行
 
@@ -70,6 +69,7 @@ export async function POST(request: Request) {
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
 
     if (!jsonMatch) {
+      console.error("AIの返事にJSONが見つかりません:", responseText);
       return new Response(JSON.stringify({ error: "AIからの返答形式が不正です。" }), { status: 500 });
     }
 
@@ -77,6 +77,8 @@ export async function POST(request: Request) {
     return new Response(jsonString, { headers: { "Content-Type": "application/json" } });
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: "AIとの通信中にエラーが発生しました。" }), { status: 500 });
+    // ★★★ ここが修正点！捕まえたエラーを記録するようにした！ ★★★
+    console.error("APIルートでエラーが発生しました:", error);
+    return new Response(JSON.stringify({ error: "AIとの通信中にサーバー内部でエラーが発生しました。" }), { status: 500 });
   }
 }
