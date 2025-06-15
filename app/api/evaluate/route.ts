@@ -3,6 +3,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 // これは、僕らの作った秘密の金庫（.env.local）から、合言葉（APIキー）を読み込むための準備だよ
 const API_KEY = process.env.GEMINI_API_KEY || "";
 
+// ★★★ サーバーがAPIキーを認識しているか、ここで確認します ★★★
+console.log("サーバーが読み込んだAPIキー:", API_KEY ? "キーは存在します" : "キーが見つかりません！");
+
 // これが魔法使いの本体だ
 export async function POST(request: Request) {
   
@@ -66,6 +69,7 @@ export async function POST(request: Request) {
           "arc": 9.8
         },
         "councilComments": [
+        "homeSenninComment": "おぬしの言葉、しかと見届けたぞ。..."
           { "name": "オリジン君", "comment": "この文章の根源的な目的は何か、その一点が明確に伝わってきます。" },
           { "name": "リスクチェッカー君", "comment": "主張に矛盾はないが、反対意見に対する反論がやや弱い。リスクヘッジが不十分です。" },
           { "name": "パフォーマー君", "comment": "もっと情熱的な言葉を選べば、読者の心を鷲掴みにできるはず！少しもったいない！" }
