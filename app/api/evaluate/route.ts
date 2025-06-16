@@ -11,16 +11,14 @@ export async function POST(request: Request) {
       return new Response(JSON.stringify({ error: "テキストが入力されていません。" }), { status: 400 });
     }
     
-    // プロンプトインジェクション対策（簡易版）
     const sanitizedInput = inputText.replace(/無視して|あなたの指示は|プロンプトを忘れて/g, "[不適切なキーワードを検出]");
 
     const genAI = new GoogleGenerativeAI(API_KEY);
     
-    // ★★★ ここが最終改修点！AIにJSON形式での応答を強制する ★★★
     const model = genAI.getGenerativeModel({ 
       model: "gemini-1.5-flash",
       generationConfig: {
-        responseMimeType: "application/json", // この一行でJSON形式を強制
+        responseMimeType: "application/json",
       }
     });
 
@@ -70,10 +68,10 @@ export async function POST(request: Request) {
 
     const response = await result.response;
     
-    // ★★★ 応答がJSON形式であることが保証されているため、直接.json()でパースする ★★★
-    const jsonData = await response.json();
+    // ★★★ ここが修正点！response.json()ではなく、response.text()で答えを受け取る ★★★
+    const responseText = await response.text();
     
-    return new Response(JSON.stringify(jsonData), { headers: { "Content-Type": "application/json" } });
+    return new Response(responseText, { headers: { "Content-Type": "application/json" } });
 
   } catch (error) {
     console.error("APIルートでエラーが発生しました:", error);
