@@ -10,9 +10,22 @@ type AxisComment = {
 type AnalysisResult = {
   overallScore: number;
   summary: string;
-  axes: { mvi: number; csi: number; res: number; arc: number; };
-  axesComments?: { mvi: AxisComment; csi: AxisComment; res: AxisComment; arc: AxisComment; };
-  councilComments: { name: string; comment: string; }[];
+  axes: {
+    mvi: number;
+    csi: number;
+    res: number;
+    arc: number;
+  };
+  axesComments?: { 
+    mvi: AxisComment;
+    csi: AxisComment;
+    res: AxisComment;
+    arc: AxisComment;
+  };
+  councilComments: {
+    name: string;
+    comment: string;
+  }[];
   homeSenninComment?: string;
 };
 
@@ -39,10 +52,16 @@ const axesData = [
     { key: 'arc', name: 'ARC (論理構成度)', icon: '❄️', description: '表現の明快さ、論理的一貫性、構造の完成度' }
 ];
 
+// スコアから星評価を生成するヘルパーコンポーネント
 const StarRating = ({ score }: { score: number }) => {
   const fullStars = Math.floor(score / 20);
   const emptyStars = 5 - fullStars;
-  return (<div className="flex items-center text-yellow-400">{[...Array(fullStars)].map((_, i) => <span key={`full-${i}`}>★</span>)}{[...Array(emptyStars)].map((_, i) => <span key={`empty-${i}`} className="text-gray-600">★</span>)}</div>);
+  return (
+    <div className="flex items-center text-yellow-400">
+      {[...Array(fullStars)].map((_, i) => <span key={`full-${i}`}>★</span>)}
+      {[...Array(emptyStars)].map((_, i) => <span key={`empty-${i}`} className="text-gray-600">★</span>)}
+    </div>
+  );
 };
 
 export default function Home() {
@@ -50,21 +69,17 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null); 
   const [error, setError] = useState('');
-  
-  // ★★★ 文字数制限とカウンターのための設定 ★★★
-  const MAX_CHARS = 7000;
-  const charCount = inputText.length;
-  const charColor = charCount > MAX_CHARS ? 'text-red-500' : charCount > MAX_CHARS * 0.9 ? 'text-yellow-500' : 'text-gray-400';
 
   const handleAnalysis = async () => {
     if (!inputText.trim()) { setError('テキストを入力してください。'); return; }
-    if (charCount > MAX_CHARS) { setError(`文字数上限（${MAX_CHARS}文字）を超えています。`); return; }
     setIsLoading(true); setError(''); setResult(null);
     try {
       const response = await fetch('/api/evaluate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ inputText }) });
       if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error || '分析中にサーバーエラーが発生しました。'); }
-      // JSON形式が保証されているので、直接 .json() を使用
-      const data: AnalysisResult = await response.json();
+      const responseText = await response.text();
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) { throw new Error("AIからの返答形式が不正です。"); }
+      const data: AnalysisResult = JSON.parse(jsonMatch[0]);
       setResult(data);
       document.getElementById('result-section')?.scrollIntoView({ behavior: 'smooth' });
     } catch (err) { setError(err instanceof Error ? err.message : '不明なエラーが発生しました。'); } 
@@ -99,14 +114,7 @@ export default function Home() {
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     disabled={isLoading}
-                    maxLength={MAX_CHARS + 500} // 多少の超過は許容
                   />
-                  {/* ★★★ 文字数カウンターと案内の表示 ★★★ */}
-                  <div className="flex justify-between items-center mt-2 px-2 text-sm">
-                    <p className="text-gray-500">約7,000文字（10,000トークン）まで対応</p>
-                    <p className={charColor}>{charCount} / {MAX_CHARS}</p>
-                  </div>
-                  
                   {error && <p className="text-red-400 mt-4 animate-fade-in">{error}</p>}
                   <button onClick={handleAnalysis} disabled={isLoading} className="mt-6 px-12 py-4 bg-teal-500 text-white rounded-full text-lg font-bold hover:bg-teal-400 transition-all transform hover:scale-105 shadow-[0_0_20px_rgba(45,212,191,0.5)] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
                     {isLoading ? '分析中...' : '11人格による評価を開始する'}
@@ -118,7 +126,13 @@ export default function Home() {
             <section className="my-24 animate-fade-in-slow">
                 <h2 className="text-4xl font-bold text-center mb-12 text-white">MPA評価システムとは？</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {axesData.map(axis => (<div key={axis.name} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 p-6 rounded-xl text-center"><span className="text-5xl">{axis.icon}</span><h3 className="text-xl font-bold mt-4 text-white">{axis.name}</h3><p className="text-sm text-gray-400 mt-2">{axis.description}</p></div>))}
+                    {axesData.map(axis => (
+                        <div key={axis.name} className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 p-6 rounded-xl text-center">
+                            <span className="text-5xl">{axis.icon}</span>
+                            <h3 className="text-xl font-bold mt-4 text-white">{axis.name}</h3>
+                            <p className="text-sm text-gray-400 mt-2">{axis.description}</p>
+                        </div>
+                    ))}
                 </div>
             </section>
 
@@ -131,7 +145,45 @@ export default function Home() {
         </>
         ) : (
           <main id="result-section" className="w-full max-w-6xl mx-auto mt-16 animate-fade-in-slow">
-             {/* ... (結果表示部分は変更なし) ... */}
+            <h2 className="text-4xl font-bold text-center mb-12 text-white">分析結果</h2>
+            
+            <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 p-8 rounded-2xl shadow-lg mb-8 text-center">
+                <h3 className="text-lg font-semibold text-teal-300">評価</h3>
+                <p className="text-6xl font-bold my-2 text-white">{result.overallScore} <span className="text-3xl text-gray-400">/ 100</span></p>
+                <p className="text-gray-300 mt-4 max-w-3xl mx-auto">{result.summary}</p>
+            </div>
+
+            <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 p-8 rounded-2xl shadow-lg mb-8">
+                <h3 className="text-2xl font-bold text-white mb-6 text-center">四大評価軸の分析</h3>
+                {result.axesComments && (
+                    <div className="grid md:grid-cols-2 gap-8">
+                        {axesData.map(axis => (
+                            <div key={axis.key} className="bg-gray-900/50 p-6 rounded-lg">
+                                <div className="flex justify-between items-center mb-3">
+                                    <h4 className="font-bold text-lg flex items-center text-white">
+                                        <span className="text-3xl mr-3">{axis.icon}</span>
+                                        {axis.name}
+                                    </h4>
+                                    <div className="text-right">
+                                        <StarRating score={result.axes[axis.key as keyof typeof result.axes]} />
+                                        <p className="font-bold text-teal-300 text-lg">{result.axes[axis.key as keyof typeof result.axes]} / 100</p>
+                                    </div>
+                                </div>
+                                <div className="border-t border-gray-700 pt-3">
+                                  <p className="text-sm text-gray-300"><strong className="text-green-400">評価:</strong> {result.axesComments?.[axis.key as keyof typeof result.axesComments]?.evaluationComment}</p>
+                                  <p className="text-sm text-gray-300 mt-2"><strong className="text-yellow-400">向上案:</strong> {result.axesComments?.[axis.key as keyof typeof result.axesComments]?.improvementComment}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+            
+            <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 p-8 rounded-2xl shadow-lg mb-8"><h3 className="text-lg font-semibold text-teal-300 mb-6">11人格からの詳細コメント</h3><div className="grid md:grid-cols-2 gap-x-8 gap-y-6">{result.councilComments.map((comment) => (<div key={comment.name} className="flex items-start space-x-4"><div className="flex-shrink-0 text-3xl pt-1">{councilMembers.find(m => m.name === comment.name)?.icon}</div><div><p className="font-bold text-white">{comment.name}</p><p className="text-gray-300 text-sm">{comment.comment}</p></div></div>))}</div></div>
+            
+            <div className="bg-gradient-to-tr from-yellow-500 via-amber-400 to-yellow-300 p-1 rounded-2xl shadow-lg"><div className="bg-gray-800 p-8 rounded-xl h-full flex flex-col justify-center items-center"><h3 className="text-lg font-semibold text-yellow-200 mb-3 text-center">🧙‍♂️ ホメ仙人からの言葉</h3><p className="text-yellow-100 text-center text-xl leading-relaxed italic">「{result.homeSenninComment || 'おぬしの言葉、しかと見届けたぞ。その挑戦、まことに見事じゃ！'}」</p></div></div>
+
+            <div className="text-center"><button onClick={handleReset} className="mt-12 px-8 py-2 border border-gray-600 text-gray-400 rounded-full hover:bg-gray-700 hover:text-white transition">新しい分析を始める</button></div>
           </main>
         )}
 
